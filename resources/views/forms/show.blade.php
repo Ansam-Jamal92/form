@@ -5,59 +5,100 @@
 
 <div class="form-container">
     <h1>{{ $form->name }}</h1>
-
     <form id="dynamicForm" method="POST" action="/forms/{{ $form->id }}">
         @csrf
 
         @foreach($form->schema['fields'] as $field)
             <div class="mb-3 form-group" data-key="{{ $field['key'] }}">
-                <label class="form-label fw-bold">{{ ucwords(str_replace('_', ' ', $field['key'])) }}</label>
+                <label class="form-label">{{ ucwords(str_replace('_', ' ', $field['key'])) }}</label>
 
                 @if($field['type'] === 'select')
                     <select name="{{ $field['key'] }}" class="form-select">
-                        <option value="" selected disabled>اختر...</option>
+                        <option value="" disabled selected>اختر...</option>
                         @foreach($field['options'] as $option)
-                            <option value="{{ $option }}">{{ ucwords($option) }}</option>
+                            <option value="{{ $option }}"
+                                @if(isset($field['default']) && $field['default'] === $option) selected @endif
+                            >{{ ucwords($option) }}</option>
                         @endforeach
                     </select>
                 @else
-                    <input type="{{ $field['type'] }}" name="{{ $field['key'] }}" class="form-control" placeholder="أدخل {{ str_replace('_', ' ', $field['key']) }}">
+                    <input type="{{ $field['type'] }}" 
+                           name="{{ $field['key'] }}" 
+                           class="form-control" 
+                           placeholder="أدخل {{ str_replace('_', ' ', $field['key']) }}"
+                           value="{{ $field['default'] ?? '' }}">
                 @endif
 
                 <div class="error" data-error="{{ $field['key'] }}"></div>
+                <div class="warning" data-warning="{{ $field['key'] }}"></div>
             </div>
         @endforeach
 
-        <button type="submit" class="btn btn-submit">Submit</button>
+        <div class="text-center">
+            <button type="submit" class="btn-submit">Submit</button>
+        </div>
     </form>
 </div>
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
 $(document).ready(function() {
-    
-    function toggleCompanyField() {
+    function updateConditionalFields() {
         const customerType = $('[name="customer_type"]').val();
+        const age = parseInt($('[name="age"]').val()) || 0;
+        const discount = parseFloat($('[name="discount"]').val()) || 0;
+
         if (customerType === 'company') {
             $('[data-key="company_name"]').show();
         } else {
             $('[data-key="company_name"]').hide();
         }
+
+        if (age > 0 && age < 18) {
+            $('[name="discount"]').prop('disabled', true);
+        } else {
+            $('[name="discount"]').prop('disabled', false);
+        }
+
+        if (discount > 20) {
+            $('[data-warning="discount"]').text('⚠️ Discount exceeds 20!');
+        } else {
+            $('[data-warning="discount"]').text('');
+        }
     }
 
-    toggleCompanyField();
-    $('[name="customer_type"]').change(toggleCompanyField);
+    $('[name="customer_type"], [name="age"], [name="discount"]').on('input change', updateConditionalFields);
+    updateConditionalFields();
 
-    
     $('#dynamicForm').on('submit', function(e) {
         e.preventDefault();
+        $('.error').text('');
+        $('.warning').text('');
 
-        $('.error').text(''); 
+        const formData = {};
+        let hasError = false;
+
+        $('#dynamicForm').find('input, select').each(function() {
+            const $el = $(this);
+            const key = $el.attr('name');
+
+            if ($el.is(':visible') && !$el.is(':disabled')) {
+                const value = $el.val();
+                formData[key] = value;
+
+                if (key === 'company_name' && $('[data-key="company_name"]').is(':visible') && (!value || value.trim() === '')) {
+                    $(`[data-error="${key}"]`).text('هذا الحقل مطلوب');
+                    hasError = true;
+                }
+            }
+        });
+
+        if (hasError) return;
 
         $.ajax({
             url: $(this).attr('action'),
             method: 'POST',
-            data: $(this).serialize(),
+            data: formData,
             success: function(response) {
                 alert('Form submitted successfully!');
             },

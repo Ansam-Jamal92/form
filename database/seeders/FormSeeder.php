@@ -1,16 +1,13 @@
 <?php
 
 namespace Database\Seeders;
-use App\Models\Form;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+
 use Illuminate\Database\Seeder;
+use App\Models\Form;
 
 class FormSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
-    public function run(): void
+    public function run()
     {
         Form::create([
             'name' => 'Customer Form',
@@ -31,10 +28,19 @@ class FormSeeder extends Seeder
                             'operator' => 'equals',
                             'value' => 'company'
                         ]
+                    ],
+                    [
+                        'key' => 'age',
+                        'type' => 'number',
+                        'required' => true
+                    ],
+                    [
+                        'key' => 'discount',
+                        'type' => 'number',
+                        'required' => false
                     ]
                 ]
             ]
         ]);
-    
     }
 }
