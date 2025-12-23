@@ -41,8 +41,10 @@
 </div>
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
 <script>
 $(document).ready(function() {
+
     function updateConditionalFields() {
         const customerType = $('[name="customer_type"]').val();
         const age = parseInt($('[name="age"]').val()) || 0;
@@ -67,11 +69,39 @@ $(document).ready(function() {
         }
     }
 
-    $('[name="customer_type"], [name="age"], [name="discount"]').on('input change', updateConditionalFields);
+
+    function getFocusableFields() {
+        return $('#dynamicForm')
+            .find('input, select, button')
+            .filter(':visible:not(:disabled)');
+    }
+
+    $('#dynamicForm').on('keydown', 'input, select', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+
+            const fields = getFocusableFields();
+            const index = fields.index(this);
+
+            if (index > -1 && index < fields.length - 1) {
+                fields.eq(index + 1).focus();
+            } else {
+                $('#dynamicForm').submit();
+            }
+        }
+    });
+
+
+    $('[name="customer_type"], [name="age"], [name="discount"]').on('input change', function() {
+        updateConditionalFields();
+    });
+
     updateConditionalFields();
+
 
     $('#dynamicForm').on('submit', function(e) {
         e.preventDefault();
+
         $('.error').text('');
         $('.warning').text('');
 
@@ -86,7 +116,11 @@ $(document).ready(function() {
                 const value = $el.val();
                 formData[key] = value;
 
-                if (key === 'company_name' && $('[data-key="company_name"]').is(':visible') && (!value || value.trim() === '')) {
+                if (
+                    key === 'company_name' &&
+                    $('[data-key="company_name"]').is(':visible') &&
+                    (!value || value.trim() === '')
+                ) {
                     $(`[data-error="${key}"]`).text('هذا الحقل مطلوب');
                     hasError = true;
                 }
@@ -114,6 +148,8 @@ $(document).ready(function() {
             }
         });
     });
+
 });
 </script>
+
 @endsection
